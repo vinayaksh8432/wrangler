@@ -39,7 +39,11 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 /**
  * A directive for managing date formats.
@@ -90,16 +94,36 @@ public class FormatDate implements Directive, Lineage {
       if (object != null) {
         ZonedDateTime zonedDateTime;
         if (object instanceof LocalDate) {
-          zonedDateTime = ((LocalDate) object).atStartOfDay(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
+          zonedDateTime = ((LocalDate) object).atStartOfDay(ZoneId.of("UTC"));
         } else if (object instanceof ZonedDateTime) {
-          zonedDateTime = (ZonedDateTime) object;
+          zonedDateTime = ((ZonedDateTime) object).withZoneSameInstant(ZoneId.of("UTC"));
+        } else if (object instanceof String) {
+          // Try to parse the string as a date
+          try {
+            // Try parsing as ISO format first
+            zonedDateTime = ZonedDateTime.parse((String) object).withZoneSameInstant(ZoneId.of("UTC"));
+          } catch (Exception e) {
+            // If that fails, try parsing with the specified format
+            try {
+              SimpleDateFormat parser = new SimpleDateFormat(format);
+              parser.setTimeZone(TimeZone.getTimeZone("UTC"));
+              Date date = parser.parse((String) object);
+              zonedDateTime = date.toInstant().atZone(ZoneId.of("UTC"));
+            } catch (ParseException pe) {
+              throw new DirectiveExecutionException(
+                NAME, String.format("Column '%s' has invalid date format. Apply 'parse-as-date' directive first.",
+                                  column));
+            }
+          }
         } else {
           throw new DirectiveExecutionException(
             NAME, String.format("Column '%s' has invalid type '%s'. Apply 'parse-as-date' directive first.",
                                 column, object.getClass().getSimpleName()));
         }
 
-        dt.setValue(idx, destinationFmt.format(zonedDateTime));
+        // Format the date using the specified format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format).withZone(ZoneId.of("UTC"));
+        dt.setValue(idx, formatter.format(zonedDateTime));
       }
 
       results.add(dt);

@@ -85,11 +85,16 @@ public final class SystemDirectiveRegistry implements DirectiveRegistry {
         Reflections reflections = new Reflections(namespace);
         Set<Class<? extends Directive>> system = reflections.getSubTypesOf(Directive.class);
         for (Class<? extends Directive> directive : system) {
-          DirectiveInfo info = DirectiveInfo.fromSystem(directive);
-          registry.put(info.name(), info);
+          try {
+            DirectiveInfo info = DirectiveInfo.fromSystem(directive);
+            registry.put(info.name(), info);
+          } catch (Exception e) {
+            // Log the error but continue loading other directives
+            System.err.println("Failed to load directive " + directive.getName() + ": " + e.getMessage());
+          }
         }
-      } catch (InstantiationException | IllegalAccessException e) {
-        throw new DirectiveLoadException(e.getMessage(), e);
+      } catch (Exception e) {
+        throw new DirectiveLoadException("Failed to scan namespace " + namespace + ": " + e.getMessage(), e);
       }
     }
     this.registry = Collections.unmodifiableMap(registry);

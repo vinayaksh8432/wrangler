@@ -17,6 +17,7 @@
 package io.cdap.wrangler;
 
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.StageMetrics;
 import io.cdap.wrangler.api.CompileException;
 import io.cdap.wrangler.api.CompileStatus;
 import io.cdap.wrangler.api.Compiler;
@@ -79,6 +80,11 @@ public final class TestingRig {
   public static List<Row> execute(String[] recipe, List<Row> rows)
     throws RecipeException, DirectiveParseException, DirectiveLoadException {
     return execute(recipe, rows, new TestingPipelineContext());
+  }
+
+  public static List<Row> execute(String[] recipe, List<Row> rows, StageMetrics metrics)
+    throws RecipeException, DirectiveParseException, DirectiveLoadException {
+    return execute(recipe, rows, new TestingPipelineContext(metrics));
   }
 
   public static List<Row> execute(String[] recipe, List<Row> rows, ExecutorContext context)

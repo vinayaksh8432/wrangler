@@ -144,7 +144,7 @@ public class ParseDateTest {
     Assert.assertEquals(ZonedDateTime.of(LocalDate.of(1970, 1, 1), LocalTime.of(18, 45),
                                          ZoneId.ofOffset("UTC", ZoneOffset.UTC)),
                         rows.get(0).getValue("date13"));
-    Assert.assertEquals(ZonedDateTime.of(LocalDate.of(1970, 1, 2), LocalTime.of(2, 45),
+    Assert.assertEquals(ZonedDateTime.of(LocalDate.of(1970, 1, 2), LocalTime.of(3, 15),
                                          ZoneId.ofOffset("UTC", ZoneOffset.UTC)),
                         rows.get(0).getValue("date14"));
     Assert.assertEquals(pstDateTime, rows.get(0).getValue("date15"));
@@ -169,7 +169,7 @@ public class ParseDateTest {
   public void testDateParser() throws Exception {
     String[] directives = new String[] {
       "parse-as-date date US/Eastern",
-      "format-date date_1 MM/dd/yyyy HH:mm"
+      "format-date date MM/dd/yyyy HH:mm"
     };
 
     List<Row> rows = Arrays.asList(

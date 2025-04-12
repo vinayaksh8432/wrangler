@@ -41,6 +41,10 @@ public class WorkspaceStoreTest extends SystemAppTestBase {
 
   @BeforeClass
   public static void setupTest() throws Exception {
+    // Create Windows-compatible directories for test data
+    String tempDir = System.getProperty("java.io.tmpdir");
+    WindowsPathUtils.createDirectory(tempDir + "/wrangler-test");
+    
     getStructuredTableAdmin().create(WorkspaceStore.WORKSPACE_TABLE_SPEC);
     store = new WorkspaceStore(getTransactionRunner());
   }

@@ -100,15 +100,40 @@ public class ParseDate implements Directive, Lineage {
           continue;
         }
         if (object instanceof String) {
-          Parser parser = new Parser(timezone);
-          List<DateGroup> groups = parser.parse((String) object);
-          int i = 1;
-          for (DateGroup group : groups) {
-            List<Date> dates = group.getDates();
-            for (Date date : dates) {
-              row.add(String.format("%s_%d", column, i), date.toInstant().atZone(timezone.toZoneId()));
+          String value = (String) object;
+          try {
+            // Try parsing with Java's built-in date/time APIs first
+            ZonedDateTime dateTime = null;
+            try {
+              // Try parsing as ISO format first
+              dateTime = ZonedDateTime.parse(value);
+            } catch (Exception e) {
+              // If parsing fails, try using Natty as fallback
+              Parser parser = new Parser(timezone);
+              List<DateGroup> groups = parser.parse(value);
+              if (!groups.isEmpty()) {
+                List<Date> dates = groups.get(0).getDates();
+                if (!dates.isEmpty()) {
+                  // Convert to ZonedDateTime in the specified timezone
+                  dateTime = dates.get(0).toInstant().atZone(timezone.toZoneId());
+                }
+              }
             }
-            i++;
+            
+            if (dateTime != null) {
+              // Ensure the timezone is set correctly
+              if (!dateTime.getZone().equals(timezone.toZoneId())) {
+                dateTime = dateTime.withZoneSameInstant(timezone.toZoneId());
+              }
+              row.setValue(idx, dateTime);
+            } else {
+              throw new ErrorRowException(
+                NAME, String.format("Failed to parse date '%s' in column '%s'", value, column), 1);
+            }
+          } catch (Exception e) {
+            throw new ErrorRowException(
+              NAME, String.format("Failed to parse date '%s' in column '%s': %s",
+                                  value, column, e.getMessage()), 1);
           }
         } else {
           throw new ErrorRowException(

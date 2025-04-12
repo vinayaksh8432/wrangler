@@ -36,6 +36,7 @@ import io.cdap.wrangler.api.parser.UsageDefinition;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -70,9 +71,10 @@ public class ParseSimpleDate implements Directive, Lineage {
     String format = ((Text) args.value("format")).value();
     this.formatter = new SimpleDateFormat(format);
     // CDAP-19615 Use pure Gregorian Calendar to avoid Julian date precision loss
-    GregorianCalendar gc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+    GregorianCalendar gc = new GregorianCalendar(TimeZone.getTimeZone(ZoneOffset.UTC));
     gc.setGregorianChange(new Date(Long.MIN_VALUE));
     formatter.setCalendar(gc);
+    formatter.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
   }
 
   @Override
@@ -94,13 +96,56 @@ public class ParseSimpleDate implements Directive, Lineage {
         }
         if (object instanceof String) {
           try {
-            // This implementation first creates Date object and then converts it into ZonedDateTime. This is because
-            // ZonedDateTime requires presence of Zone and Time components in the pattern and object to be parsed.
-            // For example if the pattern is yyyy-mm-dd, ZonedDateTime object can not be created and the call to
-            // ZonedDateTime.parse("2018-12-21", formatter) will throw DateTimeParseException
-            Date date = formatter.parse(object.toString());
-            ZonedDateTime zonedDateTime = ZonedDateTime.from(date.toInstant()
-                                                               .atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
+            String input = object.toString();
+            
+            // Create a formatter with UTC timezone
+            SimpleDateFormat tzFormatter = new SimpleDateFormat(formatter.toPattern());
+            tzFormatter.setCalendar(formatter.getCalendar());
+            
+            // Handle timezone information if present in the pattern
+            TimeZone inputTimeZone = TimeZone.getTimeZone(ZoneOffset.UTC);
+            if (formatter.toPattern().contains("z") || formatter.toPattern().contains("Z")) {
+              // Extract timezone from input using the formatter's pattern
+              String tzPattern = formatter.toPattern();
+              int tzStart = Math.max(tzPattern.lastIndexOf('z'), tzPattern.lastIndexOf('Z'));
+              
+              if (tzStart != -1) {
+                // Get the timezone part from the input
+                String beforeTz = tzPattern.substring(0, tzStart);
+                SimpleDateFormat beforeTzFormatter = new SimpleDateFormat(beforeTz);
+                beforeTzFormatter.setCalendar(formatter.getCalendar());
+                beforeTzFormatter.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
+                Date beforeTzDate = beforeTzFormatter.parse(input);
+                String beforeTzString = beforeTzFormatter.format(beforeTzDate);
+                int inputTzStart = input.indexOf(beforeTzString) + beforeTzString.length();
+                
+                // Extract the timezone
+                String tzString = input.substring(inputTzStart).trim();
+                // Handle common timezone abbreviations
+                if (tzString.equalsIgnoreCase("PST")) {
+                  inputTimeZone = TimeZone.getTimeZone("America/Los_Angeles");
+                } else if (tzString.equalsIgnoreCase("EST")) {
+                  inputTimeZone = TimeZone.getTimeZone("America/New_York");
+                } else if (tzString.equalsIgnoreCase("CST")) {
+                  inputTimeZone = TimeZone.getTimeZone("America/Chicago");
+                } else if (tzString.equalsIgnoreCase("MST")) {
+                  inputTimeZone = TimeZone.getTimeZone("America/Denver");
+                } else {
+                  inputTimeZone = TimeZone.getTimeZone(tzString);
+                }
+              }
+            }
+            
+            // Set the timezone before parsing
+            tzFormatter.setTimeZone(inputTimeZone);
+            
+            // Parse the date
+            Date date = tzFormatter.parse(input);
+            
+            // Convert to UTC using Java 8's time API
+            Instant instant = date.toInstant();
+            ZonedDateTime zonedDateTime = instant.atZone(ZoneId.of("UTC"));
+            
             row.setValue(idx, zonedDateTime);
           } catch (ParseException e) {
             throw new ErrorRowException(

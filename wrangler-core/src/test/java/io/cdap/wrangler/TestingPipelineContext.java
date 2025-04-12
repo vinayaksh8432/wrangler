@@ -33,6 +33,7 @@ import java.util.Map;
  * This class {@link TestingPipelineContext} is a runtime context that is provided for each
  * {@link Executor} execution.
  */
+@SuppressWarnings("unused")
 public class TestingPipelineContext implements ExecutorContext {
   private final StageMetrics metrics;
   private final String name;
@@ -41,13 +42,14 @@ public class TestingPipelineContext implements ExecutorContext {
   private boolean schemaManagementEnabled;
 
   public TestingPipelineContext() {
+    this(null);
+  }
+
+  public TestingPipelineContext(StageMetrics metrics) {
     name = "testing";
     store = new DefaultTransientStore();
     properties = new HashMap<>();
-
-    metrics = Mockito.mock(StageMetrics.class);
-    Mockito.doNothing().when(metrics).count(Mockito.anyString(), Mockito.anyInt());
-
+    this.metrics = metrics != null ? metrics : Mockito.mock(StageMetrics.class);
     schemaManagementEnabled = false;
   }
 
