@@ -1,0 +1,32 @@
+# Wrangler Assignment Prompts
+
+## Initial Setup and Understanding
+- "I need to modify the ANTLR4 grammar file (Directives.g4) to add lexer rules for BYTE_SIZE and TIME_DURATION tokens. The BYTE_SIZE should recognize patterns like '10KB', '1.5MB', etc. The TIME_DURATION should recognize patterns like '500ms', '2.5s', etc. Please provide the lexer rules including helper fragments for BYTE_UNIT and TIME_UNIT."
+
+## ByteSize Class Issue
+- "How should I modify the parser rules in my ANTLR4 grammar to use the new BYTE_SIZE and TIME_DURATION tokens? I need examples of how to modify existing rules like 'value' or create new specific rules like 'byteSizeArg' and 'timeDurationArg'."
+
+#API Updates Prompts
+- "I need to create Java classes ByteSize.java and TimeDuration.java that extend the Token class"
+- "How should I update the Token Types enum to include BYTE_SIZE and TIME_DURATION?"
+
+## ParseDate Directive
+- "Can you check the implementation of the ParseDate directive to understand how timezone handling is implemented?"
+- "I need to understand how the date formatter is initialized in the ParseSimpleDate class."
+- "Can you check the implementation of date formatting in the FormatDate class?"
+
+## Directive Implementation
+- How should I implement the aggregation logic in my new directive? I need to accumulate byte sizes and time durations across multiple rows and then perform unit conversions before returning a final result row."
+
+## Windows Path Handling
+- "I'm having issues with Windows paths in the getSpecsInArchive() method. The error suggests that src.getLocation().getPath() contains illegal characters."
+
+## Testing Prompts
+- "I need to create test cases for my new aggregate directive. Please provide a sample TestingRig setup with input data representing log entries with data transfer sizes and response times, along with assertions to verify the correct calculation of size and time aggregates."
+
+## Test Failures
+- "I'm encountering test failures in the wrangler-core project. Can you help me analyze the errors?"
+- "The DataModelMapColumnTest is failing with an IllegalAccessError and NoClassDefFoundError. How can I fix this?"
+- "I need to update the test to use the correct glossary setup for DataModelMapColumn."
+- "I'm getting an UnnecessaryStubbingException in the DataModelMapColumnTest. How can I fix this?"
+- "There's a ClassFormatError in the BasicStatisticsTest. What's causing this?"
